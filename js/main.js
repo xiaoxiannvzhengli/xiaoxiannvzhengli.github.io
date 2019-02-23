@@ -1,110 +1,259 @@
-$(function(){
+(function($) {
 
-  /* Drop-down menu */
-  $('#menu-nav-icon').click(function(){
-    $('#main-nav').slideToggle()
-  })
-  $(window).on('resize', function (){
-    if ($(window).width() > 768){
-        $('#main-nav').show();
-    }else{
-        $('#main-nav').hide();
-    }
-  });
+	skel.breakpoints({
+		xlarge:	'(max-width: 1680px)',
+		large:	'(max-width: 1280px)',
+		medium:	'(max-width: 980px)',
+		small:	'(max-width: 736px)',
+		xsmall:	'(max-width: 480px)',
+		xxsmall: '(max-width: 360px)'
+	});
 
-  /* Share */
-  var shares = $("#social-share").children();
-  var url = shares.first().attr('data-url');
-  var encodedUrl = encodeURIComponent(url)
+	/**
+	 * Applies parallax scrolling to an element's background image.
+	 * @return {jQuery} jQuery object.
+	 */
+	$.fn._parallax = function(intensity) {
 
-  shares.each(function(){
-     this.href += encodedUrl;
-  })
+		var	$window = $(window),
+			$this = $(this);
 
-  /* Gallery Display */
-  // Get a list of gallery ids
-  var slideIndices = {};
-  var galleries = $('.gallery');
-  //console.log(galleries);
-  //console.log(galleries[0]);
+		if (this.length == 0 || intensity === 0)
+			return $this;
 
-  $('.gallery').each(function(index){
-    //console.log( index + ": " + $( this ).attr("id") );
-    slideIndices[$(this).attr("id")] = 1;
-  });
-  //console.log(slideIndices);
+		if (this.length > 1) {
 
-  galleries.each(function(){
-    showSlides($(this).attr("id"), 1);
-  })
+			for (var i=0; i < this.length; i++)
+				$(this[i])._parallax(intensity);
 
+			return $this;
 
-  function showSlides(id, n) {
-    galleries.each(function(){
-      var that = $(this);
-      if(that.attr("id") == id){
-        var slides = that.find('.mySlides');
-        var dots = that.find('.demo');
-        var captionText = that.find('.caption');
-        console.log("Slide length is " + slides.length);
-        if (n > slides.length){
-          slideIndices[id] = 1;
-          n = 1;
-        }
-        if (n < 1){
-          slideIndices[id] = slides.length;
-          n = slides.length;
-        }
-        console.log("n is "+ n);
-        slides.each(function(index){
-          if(index == (n-1)){
-            console.log("here");
-            $(this).css({"display": "block"});
-          }else{
-            $(this).css({"display": "none"});
-          }
-        })
-        dots.each(function(index){
-          if(index == (n-1)){
-            $(this).addClass("display");
-          }else{
-            $(this).removeClass("display");
-          }
-        })
-        var capText = $(dots[slideIndices[id]]).attr("alt");
-        try{
-          capText = capText.split('/').pop().replace(/\.[^/.]+$/, "");
-        }catch(e){
-          capText = $(dots[slideIndices[id]]).attr("alt");
-        }
-        captionText.html(capText);
-      }
-    })
-  }
+		}
 
-   /* install event function */
-   $(".gallery .columns .column img").each(function(){
-     $(this).click(function(){
-       var key = $(this).attr("data-id");
-       var num = $(this).attr("data-num");
-       showSlides(key, slideIndices[key] = num);
-     })
-   });
+		if (!intensity)
+			intensity = 0.25;
 
-   galleries.each(function(){
-     $(this).find(".prev").click(function(){
-       var key = $(this).attr("data-id");
-       slideIndices[key] -=1;
-       console.log("Index is " +  slideIndices[key]);
-       showSlides(key, slideIndices[key]);
-     })
-   })
-   galleries.each(function(){
-     $(this).find(".next").click(function(){
-       var key = $(this).attr("data-id");
-       slideIndices[key] +=1;
-       console.log("Index is " +  slideIndices[key]);
-       showSlides(key, slideIndices[key]);
-     })
-   })
-})
+		$this.each(function() {
+
+			var $t = $(this),
+				$bg = $('<div class="bg"></div>').appendTo($t),
+				on, off;
+
+			on = function() {
+
+				$bg
+					.removeClass('fixed')
+					.css('transform', 'none');
+
+				$window
+					.on('scroll._parallax', function() {
+
+						$bg.css('transform', 'none');
+
+					});
+			};
+
+			off = function() {
+
+				$bg
+					.addClass('fixed')
+					.css('transform', 'none');
+
+				$window
+					.off('scroll._parallax');
+
+			};
+
+			// Disable parallax on ..
+				if (skel.vars.browser == 'ie'		// IE
+				||	skel.vars.browser == 'edge'		// Edge
+				||	window.devicePixelRatio > 1		// Retina/HiDPI (= poor performance)
+				||	skel.vars.mobile)				// Mobile devices
+					off();
+
+			// Enable everywhere else.
+				else {
+
+					skel.on('!large -large', on);
+					skel.on('+large', off);
+
+				}
+
+		});
+
+		$window
+			.off('load._parallax resize._parallax')
+			.on('load._parallax resize._parallax', function() {
+				$window.trigger('scroll');
+			});
+
+		return $(this);
+
+	};
+
+	$(function() {
+
+		var	$window = $(window),
+			$body = $('body'),
+			$wrapper = $('#wrapper'),
+			$header = $('#header'),
+			$nav = $('#nav'),
+			$main = $('#main'),
+			$navPanelToggle, $navPanel, $navPanelInner;
+
+		// Disable animations/transitions until the page has loaded.
+			$window.on('load', function() {
+				window.setTimeout(function() {
+					$body.removeClass('is-loading');
+				}, 100);
+			});
+
+		// Prioritize "important" elements on medium.
+			skel.on('+medium -medium', function() {
+				$.prioritize(
+					'.important\\28 medium\\29',
+					skel.breakpoint('medium').active
+				);
+			});
+
+		// Scrolly.
+			$('.scrolly').scrolly();
+
+		// Background.
+			$wrapper._parallax(0.925);
+
+		// Nav Panel.
+
+			// Toggle.
+				$navPanelToggle = $(
+					'<a href="#navPanel" id="navPanelToggle">Menu</a>'
+				)
+					.appendTo($wrapper);
+
+				// Change toggle styling once we've scrolled past the header.
+					$header.scrollex({
+						bottom: '5vh',
+						enter: function() {
+							$navPanelToggle.removeClass('alt');
+						},
+						leave: function() {
+							$navPanelToggle.addClass('alt');
+						}
+					});
+
+			// Panel.
+				$navPanel = $(
+					'<div id="navPanel">' +
+						'<nav>' +
+						'</nav>' +
+						'<a href="#navPanel" class="close"></a>' +
+					'</div>'
+				)
+					.appendTo($body)
+					.panel({
+						delay: 500,
+						hideOnClick: true,
+						hideOnSwipe: true,
+						resetScroll: true,
+						resetForms: true,
+						side: 'right',
+						target: $body,
+						visibleClass: 'is-navPanel-visible'
+					});
+
+				// Get inner.
+					$navPanelInner = $navPanel.children('nav');
+
+				// Move nav content on breakpoint change.
+					var $navContent = $nav.children();
+
+					skel.on('!medium -medium', function() {
+
+						// NavPanel -> Nav.
+							$navContent.appendTo($nav);
+
+						// Flip icon classes.
+							$nav.find('.icons, .icon')
+								.removeClass('alt');
+
+					});
+
+					skel.on('+medium', function() {
+
+						// Nav -> NavPanel.
+						$navContent.appendTo($navPanelInner);
+
+						// Flip icon classes.
+							$navPanelInner.find('.icons, .icon')
+								.addClass('alt');
+
+					});
+
+				// Hack: Disable transitions on WP.
+					if (skel.vars.os == 'wp'
+					&&	skel.vars.osVersion < 10)
+						$navPanel
+							.css('transition', 'none');
+
+		// Intro.
+			var $intro = $('#intro');
+
+			if ($intro.length > 0) {
+
+				// Hack: Fix flex min-height on IE.
+					if (skel.vars.browser == 'ie') {
+						$window.on('resize.ie-intro-fix', function() {
+
+							var h = $intro.height();
+
+							if (h > $window.height())
+								$intro.css('height', 'auto');
+							else
+								$intro.css('height', h);
+
+						}).trigger('resize.ie-intro-fix');
+					}
+
+				// Hide intro on scroll (> small).
+					skel.on('!small -small', function() {
+
+						$main.unscrollex();
+
+						$main.scrollex({
+							mode: 'bottom',
+							top: '25vh',
+							bottom: '-50vh',
+							enter: function() {
+								$intro.addClass('hidden');
+							},
+							leave: function() {
+								$intro.removeClass('hidden');
+							}
+						});
+
+					});
+
+				// Hide intro on scroll (<= small).
+					skel.on('+small', function() {
+
+						$main.unscrollex();
+
+						$main.scrollex({
+							mode: 'middle',
+							top: '15vh',
+							bottom: '-15vh',
+							enter: function() {
+								$intro.addClass('hidden');
+							},
+							leave: function() {
+								$intro.removeClass('hidden');
+							}
+						});
+
+				});
+
+			}
+
+	});
+
+})(jQuery);
